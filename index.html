@@ -15,14 +15,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        /* 隱藏捲動條但保留捲動功能 */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
-        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .marker-icon {
             background-color: #0d9488;
             color: white;
@@ -36,3 +30,297 @@
         }
     </style>
 </head>
+<body class="bg-slate-50 text-slate-800 font-sans overflow-hidden">
+
+    <div class="flex flex-col md:flex-row h-screen w-full">
+        
+        <div id="map" class="w-full h-[40vh] md:h-screen md:w-1/2 lg:w-3/5 order-1 md:order-2 z-10 shadow-md"></div>
+
+        <div class="w-full h-[60vh] md:h-screen md:w-1/2 lg:w-2/5 order-2 md:order-1 overflow-y-auto no-scrollbar relative z-20 flex flex-col">
+            
+            <header class="bg-gradient-to-br from-teal-600 to-teal-800 text-white p-6 shadow-md shrink-0">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h1 class="text-2xl font-bold mb-2"><i class="fa-solid fa-cake-candles mr-2"></i>生日快樂遊中越</h1>
+                        <p class="text-teal-200 text-sm">2025.08.22 (五) ~ 08.26 (二) | 5天4夜</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="bg-teal-500 text-white text-xs font-semibold px-3 py-1 rounded-full">會安 ✈ 峴港</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="px-4 pt-4 shrink-0">
+                <div id="day-tabs" class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                </div>
+            </div>
+
+            <div id="itinerary-content" class="flex-1 overflow-y-auto no-scrollbar px-4 pt-3 pb-6">
+            </div>
+
+            <div class="shrink-0 border-t border-slate-200">
+                <button id="tools-toggle" onclick="toggleTools()" class="w-full flex items-center justify-between p-4 bg-white hover:bg-slate-50 transition-colors">
+                    <span class="font-semibold text-slate-700"><i class="fa-solid fa-toolbox mr-2 text-teal-600"></i>實用工具清單</span>
+                    <i id="tools-arrow" class="fa-solid fa-chevron-up text-slate-400 transition-transform"></i>
+                </button>
+                <div id="tools-panel" class="hidden bg-slate-50 px-4 pb-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h3 class="font-bold text-slate-700 mb-2 text-sm"><i class="fa-solid fa-suitcase-rolling mr-1 text-teal-600"></i>行李確認表</h3>
+                            <ul class="space-y-1 text-xs text-slate-600">
+                                <li><i class="fa-regular fa-square mr-1"></i>護照 (效期6個月以上)</li>
+                                <li><i class="fa-regular fa-square mr-1"></i>越南電子簽證</li>
+                                <li><i class="fa-regular fa-square mr-1"></i>美金 / 越南盾現鈔</li>
+                                <li><i class="fa-regular fa-square mr-1"></i>信用卡 (海外回饋)</li>
+                                <li><i class="fa-regular fa-square mr-1"></i>網卡 / eSIM</li>
+                                <li><i class="fa-regular fa-square mr-1"></i>換洗衣物 (夏裝+薄外套)</li>
+                                <li><i class="fa-regular fa-square mr-1"></i>泳衣 / 泳具</li>
+                                <li><i class="fa-regular fa-square mr-1"></i>個人常備藥品</li>
+                                <li><i class="fa-regular fa-square mr-1"></i>行動電源 / 充電線</li>
+                                <li><i class="fa-regular fa-square mr-1"></i>防曬乳 / 太陽眼鏡</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-700 mb-2 text-sm"><i class="fa-solid fa-hotel mr-1 text-teal-600"></i>住宿資訊</h3>
+                            <div class="space-y-2 text-xs text-slate-600">
+                                <div class="bg-white rounded-lg p-2 border border-slate-200">
+                                    <p class="font-semibold text-teal-700">D1-D2: 會安莫伊爾飯店</p>
+                                    <p>Moire Hoi An, Vignette Collection</p>
+                                </div>
+                                <div class="bg-white rounded-lg p-2 border border-slate-200">
+                                    <p class="font-semibold text-teal-700">D3-D4: 峴港洲際陽光半島度假村</p>
+                                    <p>InterContinental Danang Sun Peninsula Resort</p>
+                                </div>
+                                <div class="bg-white rounded-lg p-2 border border-slate-200">
+                                    <p class="font-semibold text-teal-700">D5: 峴港皇冠飯店</p>
+                                    <p>Crowne Plaza Danang City Centre</p>
+                                </div>
+                            </div>
+                            <h3 class="font-bold text-slate-700 mt-3 mb-2 text-sm"><i class="fa-solid fa-phone-volume mr-1 text-red-500"></i>緊急聯絡</h3>
+                            <div class="bg-white rounded-lg p-2 border border-slate-200 text-xs text-slate-600">
+                                <p class="font-semibold">駐越南台北經濟文化辦事處:</p>
+                                <p>急難救助電話：(84) 913206998</p>
+                                <p class="mt-1"><i class="fa-solid fa-car-side mr-1 text-teal-600"></i>當地交通：建議使用 Grab App 叫車</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const itineraryData = [
+            {
+                day: 1, date: "8/22 (五)", title: "抵達會安", theme: "抵台出發",
+                color: "teal",
+                events: [
+                    { time: "08:00", icon: "fa-plane-departure", title: "桃園機場集合", desc: "前往 T2 航廈，辦理登機手續", type: "transport" },
+                    { time: "10:10", icon: "fa-plane", title: "VJ830 起飛", desc: "桃園 (TPE) → 峴港 (DAD)", type: "transport" },
+                    { time: "13:20", icon: "fa-plane-arrival", title: "抵達峴港", desc: "峴港國際機場入境，領取行李", type: "transport" },
+                    { time: "14:30", icon: "fa-car", title: "專車前往會安", desc: "約 30 分鐘車程，入住飯店辦理 Check-in", type: "transport" },
+                    { time: "16:00", icon: "fa-hotel", title: "Check-in 會安莫伊爾飯店", desc: "Moire Hoi An, Vignette Collection - 放置行李、熟悉環境", type: "hotel" },
+                    { time: "17:30", icon: "fa-person-walking", title: "會安古鎮初探", desc: "步行前往古鎮，感受黃昏氛圍，拍攝古街風景", type: "activity", coords: [15.8800, 108.3380] },
+                    { time: "19:00", icon: "fa-utensils", title: "晚餐：白玫瑰餐廳", desc: "品嚐當地名菜白玫瑰蝦餃 (Bánh Bao Vạc)", type: "food", coords: [15.8795, 108.3320] },
+                    { time: "20:30", icon: "fa-lightbulb", title: "夜遊古鎮燈籠街", desc: "欣賞璀璨燈籠，感受會安獨特魅力", type: "activity", coords: [15.8780, 108.3350] }
+                ]
+            },
+            {
+                day: 2, date: "8/23 (六)", title: "會安深度遊", theme: "文化探索日",
+                color: "amber",
+                events: [
+                    { time: "07:30", icon: "fa-coffee", title: "飯店早餐", desc: "享用飯店提供的早餐", type: "food" },
+                    { time: "09:00", icon: "fa-bicycle", title: "租腳踏車遊古鎮", desc: "騎車探索古鎮小巷，參觀日本橋 (Cầu Nhật Bản)", type: "activity", coords: [15.8767, 108.3268] },
+                    { time: "10:30", icon: "fa-store", title: "古鎮市場購物", desc: "採購越南特色紀念品、手工藝品", type: "activity", coords: [15.8800, 108.3300] },
+                    { time: "12:00", icon: "fa-utensils", title: "午餐：Bà Buội 餐廳", desc: "品嚐道地會安白麵 (Cao Lầu) 與雞肉飯", type: "food", coords: [15.8790, 108.3350] },
+                    { time: "14:00", icon: "fa-umbrella-beach", title: "安邦海灘放鬆", desc: "前往 An Bang Beach，享受陽光與海浪", type: "activity", coords: [15.9100, 108.3700] },
+                    { time: "16:30", icon: "fa-spa", title: "SPA 放鬆時光", desc: "預約飯店或當地 SPA，深度舒壓", type: "relax" },
+                    { time: "19:00", icon: "fa-utensils", title: "生日慶祝晚餐", desc: "精選餐廳慶祝壽星生日！🎂", type: "food", coords: [15.8800, 108.3380] },
+                    { time: "21:00", icon: "fa-moon", title: "放孔明燈", desc: "前往河邊，放水燈或孔明燈，許下生日願望", type: "activity", coords: [15.8750, 108.3300] }
+                ]
+            },
+            {
+                day: 3, date: "8/24 (日)", title: "前往峴港", theme: "轉場峴港",
+                color: "sky",
+                events: [
+                    { time: "08:00", icon: "fa-coffee", title: "飯店早餐 & Check-out", desc: "享用早餐後退房，整理行李", type: "food" },
+                    { time: "09:30", icon: "fa-car", title: "專車前往峴港", desc: "約 30 分鐘，前往峴港洲際陽光半島度假村", type: "transport" },
+                    { time: "10:30", icon: "fa-hotel", title: "Check-in 洲際陽光半島", desc: "InterContinental Danang Sun Peninsula Resort，世界頂級度假村", type: "hotel", coords: [16.1150, 108.2650] },
+                    { time: "12:00", icon: "fa-utensils", title: "度假村內午餐", desc: "在 CITRON 或 LONG BAR 享用午餐", type: "food" },
+                    { time: "14:00", icon: "fa-water", title: "無邊際泳池時光", desc: "享受度假村頂級泳池，俯瞰山海全景", type: "relax" },
+                    { time: "17:00", icon: "fa-mountain", title: "峴港五行山", desc: "若體力充沛，可前往五行山 (Marble Mountains) 參觀", type: "activity", coords: [16.0023, 108.2626] },
+                    { time: "19:30", icon: "fa-utensils", title: "晚餐：LONG BAR", desc: "在度假村 Long Bar 享用晚餐並欣賞日落", type: "food" }
+                ]
+            },
+            {
+                day: 4, date: "8/25 (一)", title: "峴港探索", theme: "城市與海灘",
+                color: "violet",
+                events: [
+                    { time: "08:00", icon: "fa-coffee", title: "度假村早餐", desc: "享用豐盛的度假村早餐", type: "food" },
+                    { time: "09:30", icon: "fa-bridge", title: "黃金手橋 (金橋)", desc: "前往巴拿山纜車站，搭乘纜車上山，參觀 Golden Bridge", type: "activity", coords: [15.9969, 107.9871] },
+                    { time: "12:30", icon: "fa-utensils", title: "巴拿山午餐", desc: "在山頂法式村莊享用午餐", type: "food" },
+                    { time: "15:00", icon: "fa-umbrella-beach", title: "峴港美溪海灘", desc: "My Khe Beach，號稱世界最美沙灘之一，享受衝浪或漫步", type: "activity", coords: [16.0671, 108.2472] },
+                    { time: "17:30", icon: "fa-bridge-water", title: "峴港龍橋夜景", desc: "參觀龍橋 (Dragon Bridge)，週末有噴火噴水表演", type: "activity", coords: [16.0610, 108.2275] },
+                    { time: "19:30", icon: "fa-utensils", title: "晚餐：Con Market 附近", desc: "前往韓江夜市或當地海鮮餐廳用餐", type: "food", coords: [16.0685, 108.2204] }
+                ]
+            },
+            {
+                day: 5, date: "8/26 (二)", title: "返回台灣", theme: "愉快歸途",
+                color: "rose",
+                events: [
+                    { time: "08:00", icon: "fa-coffee", title: "飯店早餐 & Check-out", desc: "享用早餐後，至皇冠飯店 Check-out", type: "food" },
+                    { time: "09:30", icon: "fa-shopping-bag", title: "最後採購時光", desc: "前往 Vincom Plaza 或當地市場，購買最後的伴手禮", type: "activity", coords: [16.0668, 108.2214] },
+                    { time: "11:30", icon: "fa-utensils", title: "告別午餐", desc: "享用最後一餐越南美食", type: "food" },
+                    { time: "13:00", icon: "fa-car", title: "前往峴港機場", desc: "建議提前 2.5 小時抵達機場辦理登機", type: "transport" },
+                    { time: "15:50", icon: "fa-plane-departure", title: "VJ831 起飛", desc: "峴港 (DAD) → 桃園 (TPE)", type: "transport" },
+                    { time: "20:00", icon: "fa-plane-arrival", title: "抵達桃園機場", desc: "平安回家！帶回美好的旅遊回憶 🎉", type: "transport" }
+                ]
+            }
+        ];
+
+        const typeStyles = {
+            transport: { bg: "bg-blue-50", border: "border-blue-200", icon: "text-blue-500", badge: "bg-blue-100 text-blue-700" },
+            hotel: { bg: "bg-purple-50", border: "border-purple-200", icon: "text-purple-500", badge: "bg-purple-100 text-purple-700" },
+            activity: { bg: "bg-teal-50", border: "border-teal-200", icon: "text-teal-600", badge: "bg-teal-100 text-teal-700" },
+            food: { bg: "bg-amber-50", border: "border-amber-200", icon: "text-amber-600", badge: "bg-amber-100 text-amber-700" },
+            relax: { bg: "bg-pink-50", border: "border-pink-200", icon: "text-pink-500", badge: "bg-pink-100 text-pink-700" },
+        };
+
+        const dayColors = {
+            teal: { active: "bg-teal-600 text-white", inactive: "bg-teal-100 text-teal-700 hover:bg-teal-200" },
+            amber: { active: "bg-amber-500 text-white", inactive: "bg-amber-100 text-amber-700 hover:bg-amber-200" },
+            sky: { active: "bg-sky-500 text-white", inactive: "bg-sky-100 text-sky-700 hover:bg-sky-200" },
+            violet: { active: "bg-violet-600 text-white", inactive: "bg-violet-100 text-violet-700 hover:bg-violet-200" },
+            rose: { active: "bg-rose-500 text-white", inactive: "bg-rose-100 text-rose-700 hover:bg-rose-200" },
+        };
+
+        let map;
+        let markers = [];
+        let activeDay = 0;
+
+        function initMap() {
+            map = L.map('map', { zoomControl: true }).setView([15.9800, 108.2700], 9);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+        }
+
+        function clearMarkers() {
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+        }
+
+        function addMarkers(dayData) {
+            clearMarkers();
+            const bounds = [];
+            dayData.events.forEach((event, index) => {
+                if (event.coords) {
+                    const iconEl = document.createElement('div');
+                    iconEl.className = 'marker-icon w-8 h-8 text-sm font-bold';
+                    iconEl.innerHTML = index + 1;
+                    const icon = L.divIcon({ html: iconEl, className: '', iconSize: [32, 32], iconAnchor: [16, 16] });
+                    const marker = L.marker(event.coords, { icon })
+                        .addTo(map)
+                        .bindPopup(`<b>${event.time} ${event.title}</b><br>${event.desc}`);
+                    markers.push(marker);
+                    bounds.push(event.coords);
+                }
+            });
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [40, 40] });
+            } else {
+                map.setView([15.9800, 108.2700], 9);
+            }
+        }
+
+        function renderTabs() {
+            const tabsContainer = document.getElementById('day-tabs');
+            tabsContainer.innerHTML = '';
+            itineraryData.forEach((day, index) => {
+                const colors = dayColors[day.color];
+                const btn = document.createElement('button');
+                btn.className = `flex-shrink-0 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${index === activeDay ? colors.active : colors.inactive}`;
+                btn.innerHTML = `<div>D${day.day}</div><div class="text-xs opacity-80">${day.date}</div>`;
+                btn.onclick = () => selectDay(index);
+                tabsContainer.appendChild(btn);
+            });
+        }
+
+        function selectDay(index) {
+            activeDay = index;
+            renderTabs();
+            renderItinerary();
+            addMarkers(itineraryData[index]);
+        }
+
+        function renderItinerary() {
+            const content = document.getElementById('itinerary-content');
+            const day = itineraryData[activeDay];
+            const colors = dayColors[day.color];
+            
+            let html = `
+                <div class="mb-4">
+                    <h2 class="text-lg font-bold text-slate-800">Day ${day.day}: ${day.title}</h2>
+                    <p class="text-sm text-slate-500">${day.date} · ${day.theme}</p>
+                </div>
+                <div class="space-y-3">
+            `;
+
+            day.events.forEach((event, index) => {
+                const style = typeStyles[event.type] || typeStyles.activity;
+                const hasCoords = event.coords ? 'cursor-pointer hover:shadow-md' : '';
+                const markerNum = event.coords ? `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-teal-500 text-white text-xs font-bold mr-2">${getMarkerIndex(day, index)}</span>` : '';
+                
+                html += `
+                    <div class="p-3 rounded-xl border ${style.bg} ${style.border} ${hasCoords} transition-shadow"
+                         ${event.coords ? `onclick="map.setView([${event.coords}], 15); map.eachLayer(l => { if(l.getPopup && l.getPopup()) l.closePopup(); }); markers[${getMarkerIndex(day, index)-1}]?.openPopup();"` : ''}>
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                <i class="fa-solid ${event.icon} ${style.icon} text-sm"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                    <span class="text-xs font-mono text-slate-400">${event.time}</span>
+                                    ${markerNum}
+                                    <span class="font-semibold text-slate-800 text-sm">${event.title}</span>
+                                </div>
+                                <p class="text-xs text-slate-600 leading-relaxed">${event.desc}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            content.innerHTML = html;
+            content.scrollTop = 0;
+        }
+
+        function getMarkerIndex(day, eventIndex) {
+            let count = 0;
+            for (let i = 0; i <= eventIndex; i++) {
+                if (day.events[i].coords) count++;
+            }
+            return count;
+        }
+
+        function toggleTools() {
+            const panel = document.getElementById('tools-panel');
+            const arrow = document.getElementById('tools-arrow');
+            panel.classList.toggle('hidden');
+            arrow.classList.toggle('rotate-180');
+        }
+
+        window.onload = () => {
+            initMap();
+            selectDay(0);
+        };
+
+        window.addEventListener('resize', () => {
+            if(map) { map.invalidateSize(); }
+        });
+
+    </script>
+</body>
+</html>
